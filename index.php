@@ -141,8 +141,6 @@ class imageLoader {
 			$this->addImageRecord();
 		}
 		
-		echo $sql->affected_rows;
-
 		//setting the object properties unless the value is null then setting to 0
 		if(!is_null($lx)){
 			$this->lx = $lx;
@@ -259,33 +257,31 @@ class imageLoader {
 		$imgBase = PHPImageWorkshop\ImageWorkshop::initFromPath('images/'.$this->img);
 
 		//setting dimension variables
-		$currentWidth = $imgBase->getWidth();
-		$currentHeight = $imgBase->getHeight();
-		
+		$currentWidth = $imgBase->getWidth();		
 
 		//setting image scale used in resizing and cropping
-		$scale = (305/$currentWidth);
+		$scale = (500/$currentWidth);
 
+		
+		//distance between pupils
+		$centerLength = (($this->rx / $scale) - ($this->lx / $scale));
 
-		//setting crop positioning
-		$positionX = (($this->lx/$scale)-(110/$scale)); // left translation
-		$positionY = (($this->ly/$scale)-(140/$scale)); // top translation
+		//distance between pupil and side of image
+		$offset = ($centerLength/1.2);
+
+		//crop starting position
+		$positionX = ($this->lx / $scale) - $offset;
+		$positionY = ($this->ly / $scale) - (100 / $scale);
 		$position = "LT";
 		
-		//setting the crop area
-		$cropWidth = (300/$scale); 
-		$cropHeight = (300/$scale);
+		//setting the crop area to be equal to the center area plus 2 offsets
+		$cropSize = (($centerLength)+($offset * 2)); 
 
 		//cropping image
-		$imgBase->cropInPixel($cropWidth, $cropHeight, $positionX, $positionY, $position);
-
-		//setting the resize dimensions
-		$resizeWidth = 300;
-		$resizeHeight = null;
-		$conserveProportion = true;
+		$imgBase->cropInPixel($cropSize, $cropSize, $positionX, $positionY, $position);
  
  		//resizing image
-		$imgBase->resizeInPixel($resizeWidth, $resizeHeight, $conserveProportion);
+		$imgBase->resizeInPixel(300, 300, true);
 
 		//setting background color for save
 		$backgroundColor = 'transparent';
@@ -306,7 +302,7 @@ class imageLoader {
 	}
 
 	public function displayImage(){
-		echo '<img src="images/resized/' . $this->newImage . '" alt="Image Name">';
+		echo '<img class="resizedImage" src="images/resized/' . $this->newImage . '" alt="Image Name">';
 	}
 }
 
@@ -333,13 +329,13 @@ html,body {
 	padding-bottom: 50px;
 }
 .imageContainer {
-	width: 310px;
+	width: 510px;
 	padding: 5px 0 0 5px;
 	border: 1px solid red;
 	margin: 0 auto;
 }
 #pointer_div {
-	width: 300px;
+	width: 510px;
 	min-height: 700px;
 }
 .eyeLine {
@@ -366,6 +362,10 @@ html,body {
 
 .leftEye {left: <?php echo $_COOKIE['leftX']; ?>px; top: <?php echo $_COOKIE['leftY']; ?>px; }
 .rightEye {left: <?php echo $_COOKIE['rightX']; ?>px; top: <?php echo $_COOKIE['rightY']; ?>px;}
+
+.resizedImage {
+	border: 1px solid #000;
+}
 </style>
 <body>
 <?php

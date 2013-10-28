@@ -1,7 +1,9 @@
 # ================================
-# Frame Selector (extension of ImageWorkshop class authored by Symbio)
+# Frame Selector (extension of ImageWorkshop class by Symbio)
 # ================================
 
+### Author
+Brandon Thomas
 
 ### Summary and features
 Easily allows user to select location of the pupils then re-positions and resizes the image so that it is in the optimal position for glasses frame selection

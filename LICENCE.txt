@@ -1,4 +1,4 @@
-Copyright (c) 2012 Clément Guillemain (@Sybio01)
+Copyright (c) 2013 Brandon Thomas
 
 http://en.wikipedia.org/wiki/MIT_License
 
