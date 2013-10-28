@@ -7,8 +7,8 @@ use PHPImageWorkshop\Core\ImageWorkshopLib as ImageWorkshopLib;
 use PHPImageWorkshop\Exception\ImageWorkshopException as ImageWorkshopException;
 
 // If no autoloader, uncomment these lines:
-//require_once(__DIR__.'/Core/ImageWorkshopLayer.php');
-//require_once(__DIR__.'/Exception/ImageWorkshopException.php');
+require_once(__DIR__.'/Core/ImageWorkshopLayer.php');
+require_once(__DIR__.'/Exception/ImageWorkshopException.php');
 
 /**
  * ImageWorkshop class
@@ -21,8 +21,10 @@ use PHPImageWorkshop\Exception\ImageWorkshopException as ImageWorkshopException;
  * @license http://en.wikipedia.org/wiki/MIT_License
  * @copyright Clément Guillemain
  */
+ini_set('memory_limit', '-1');
 class ImageWorkshop
 {
+
     /**
      * @var integer
      */
@@ -124,7 +126,7 @@ class ImageWorkshop
      * 
      * @return ImageWorkshopLayer
      */
-    public static function initVirginLayer($width = 100, $height = 100, $backgroundColor = null)
+    public static function initVirginLayer($width = 300, $height = 300, $backgroundColor = null)
     {
         $opacity = 0;
         
