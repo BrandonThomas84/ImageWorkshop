@@ -14,6 +14,9 @@ class imageLoader {
 	public $ly;
 	public $rx;
 	public $ry;
+	public $degrees;
+	public $opposite;
+	public $adjacent;
 
 	//image information
 	public $id;
@@ -35,13 +38,6 @@ class imageLoader {
 			//database connection
 			$this->mysqli = new mysqli(_DB_SERVER_,_DB_USER_,_DB_PASSWD_,_DB_NAME_);
 			if (!$this->mysqli){die("Could not connect to MySQLi: " . mysql_error());}
-
-			//if there is get information then set the image
-			$this->img = $_GET['img'];
-
-			//removing file extention
-			$v = array('.jpg','.jpeg','.png','.gif');
-			$this->name = str_replace($v,'', strtolower($_GET['img']));
 
 			//setting coordinate properties
 			$this->setCoordinateProperties();
@@ -128,84 +124,60 @@ class imageLoader {
 	}
 	public function setCoordinateProperties(){
 
-		$sql = $this->mysqli->prepare('SELECT `id`,`name`,`lx`,`ly`,`rx`,`ry` FROM `' . _DB_NAME_ . '`.`imageworkshop` WHERE `name` = ?');
-		$sql->bind_param('s', $this->name); 
-		$sql->execute(); 
-		$sql->store_result();
-		$sql->bind_result($id, $name, $lx, $ly, $rx, $ry); // get variables from result.
-		$sql->fetch();
+		//set the image property
+		$this->img = $_GET['img'];
 
-		
-		if($sql->affected_rows < 1){
-			//checking if there is a record for the selected image and if not inserting it
-			$this->addImageRecord();
+		//removing file extention
+		$v = array('.jpg','.jpeg','.png','.gif');
+
+		//setting name property
+		$this->name = str_replace($v,'', strtolower($_GET['img']));
+
+		//cookies to be set
+		$cookies = array('lx','ly','rx','ry','degrees','opposite','adjacent');
+
+		foreach($cookies as $cookie){
+			if(isset($_COOKIE[$cookie])){
+				$this->$cookie = $_COOKIE[$cookie];
+			}
 		}
 		
-		//setting the object properties unless the value is null then setting to 0
-		if(!is_null($lx)){
-			$this->lx = $lx;
-		} else {
-			$this->lx = 0;
-		}
-
-		if(!is_null($ly)){
-			$this->ly = $ly;
-		} else {
-			$this->ly = 0;
-		}
-
-		if(!is_null($rx)){
-			$this->rx = $rx;
-		} else {
-			$this->rx = 0;
-		}
-
-		if(!is_null($ry)){
-			$this->ry = $ry;
-		} else {
-			$this->ry = 0;
-		}
-
-		if(!is_null($id)){
-			$this->id = $id;
-		} else {
-			$this->id = 0;
-		}
-
-		if(!is_null($name)){
-			$this->name = $name;
-		} else {
-			$this->name = 0;
-		}
-	}
-	public function addImageRecord(){
-
-		
-
-		//inserting new value
-		$sql = 'INSERT INTO `' . _DB_NAME_ . '`.`imageworkshop` (`name`) VALUES (\'' . $this->name . '\')';
-		$sql = $this->mysqli->prepare($sql);
-		$sql->execute(); 
 	}
 	public function updateCoordinates(){
 		
 		//checking if value being submitted is correct type
 		if(in_array($this->pupil, array('L','R'))){
 
-			//setting the update values
-			$values = strtolower($this->pupil) . 'x = \'' . $_POST["form_x"] . '\', ' . strtolower($this->pupil) . 'y = \'' . $_POST["form_y"] . '\'';
+			//setting left and right coordinate value cookies
+			setcookie(strtolower($this->pupil) . 'x',$_POST["form_x"]);
+			setcookie(strtolower($this->pupil) . 'y',$_POST["form_y"]);
+		}	
 
-			//update table statement
-			$sql = 'UPDATE `' . _DB_NAME_ . '`.`imageworkshop` SET ' . $values . ' WHERE `name` = \'' . $this->name . '\'';
-			$sql = $this->mysqli->prepare($sql);
-			$sql->execute(); 
-		}		
+		if($this->pupil == 'R'){
+				
+			//setting trig sides
+			$this->opposite = (intval($_COOKIE['ly']) - intval($_POST["form_y"]));
+			$this->adjacent = (intval($_POST["form_x"]) - intval($_COOKIE['lx']));
+
+			//calculating arc Tangent in radians
+			$arcTangent = atan(($this->opposite / $this->adjacent));
+
+			//calculate rotation degrees from arc tangent radians
+			$this->degrees = rad2deg($arcTangent);
+
+			//setting degrees cookie
+			setcookie('opposite',$this->opposite);
+			setcookie('adjacent',$this->adjacent);
+			setcookie('degrees',$this->degrees);
+		}
 	}
 	public function deleteCoordinates(){
 
-		$sql = 'UPDATE `' . _DB_NAME_ . '`.`imageworkshop` SET lx = NULL, ly = NULL, rx = NULL, ry = NULL  WHERE `name` = \'' . $this->name . '\'';
-		$sql = $this->mysqli->prepare($sql);
-		$sql->execute(); 	
+		$cookies = array('lx','ly','rx','ry','degrees','opposite','adjacent');
+
+		foreach($cookies as $cookie){
+			setcookie($cookie,null,time()-100);
+		}
 	}
 	public function pupilForm(){
 		return '
@@ -261,7 +233,6 @@ class imageLoader {
 
 		//setting image scale used in resizing and cropping
 		$scale = (500/$currentWidth);
-
 		
 		//distance between pupils
 		$centerLength = (($this->rx / $scale) - ($this->lx / $scale));
@@ -277,9 +248,12 @@ class imageLoader {
 		//setting the crop area to be equal to the center area plus 2 offsets
 		$cropSize = (($centerLength)+($offset * 2)); 
 
+		//rotating image so eyes are aligned
+		$imgBase->rotate($this->degrees);
+		
 		//cropping image
 		$imgBase->cropInPixel($cropSize, $cropSize, $positionX, $positionY, $position);
- 
+
  		//resizing image
 		$imgBase->resizeInPixel(300, 300, true);
 
@@ -298,11 +272,15 @@ class imageLoader {
  		//save new image
 		$imgBase->save($dirPath, $filename, $createFolders, $backgroundColor, $imageQuality);	
 
+		//setting the new image property 
 		$this->newImage = $filename;
+
+		//removing stored cookie values
+		$this->deleteCoordinates();
 	}
 
 	public function displayImage(){
-		echo '<img class="resizedImage" src="images/resized/' . $this->newImage . '" alt="Image Name">';
+		echo '<br><h1>Resized Image</h1><img class="resizedImage" src="images/resized/' . $this->newImage . '" alt="Image Name">';
 	}
 }
 
