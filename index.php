@@ -31,25 +31,34 @@ class imageLoader {
 	
 	public function imageLoader(){
 
+		require_once("src/PHPImageWorkshop/ImageWorkshop.php");
+
 		if(!isset($_GET['img'])){
+
+			//include the head information
+			require_once('head.php');
+
 			//if there is no get and no image return the image sselection list
 			echo $this->selectImage();
 		} else {
+
+			/*
 			//database connection
 			$this->mysqli = new mysqli(_DB_SERVER_,_DB_USER_,_DB_PASSWD_,_DB_NAME_);
 			if (!$this->mysqli){die("Could not connect to MySQLi: " . mysql_error());}
+			*/
+
 
 			//setting coordinate properties
 			$this->setCoordinateProperties();
-
-			//setting the pupil that is being worked on
-			$this->pupilSelect();
 
 			//check if an update has been submitted 
 			$this->submissionCheck();
 			
 			//checking if image has been created
 			$this->checkForExistingImage();
+
+			echo '<a href="index.php" title="back to image selection">Return to Image List</a>';
 
 		}
 	}
@@ -107,6 +116,9 @@ class imageLoader {
 		//setting filename
 		$file = 'images/resized/' . $this->name . '_resized.png';
 
+		//include the head information
+		require_once('head.php');
+
 		//checking if file is present
 		if(file_exists($file)){
 
@@ -141,8 +153,31 @@ class imageLoader {
 				$this->$cookie = $_COOKIE[$cookie];
 			}
 		}
-		
+
+		if($this->lx == 0 || $this->ly == 0) {
+			$this->pupil = 'L';
+			$this->pupilFriendly = 'Left';
+			$this->button = null;
+			$this->instruction = 'Click on Left-Most Pupil';
+			$this->warning = null;
+
+		} elseif($this->rx == 0 || $this->ry == 0) {
+			$this->pupil = 'R';
+			$this->pupilFriendly = 'Right';
+			$this->button = '<form name="deleteCoordinates" method="post"><input type="submit" value="Delete Value(s)"><input type="hidden" value="' . $this->img . '" name="deleteimagevalues"></form>';
+			$this->instruction = 'Click on Right-Most Pupil';
+			$this->warning = null;
+
+		} else {
+			$this->pupil = 'C';
+			$this->pupilFriendly = 'COMPLETE';
+			$this->button = '<form name="deleteCoordinates" method="post"><input type="submit" value="Delete Value(s)"><input type="hidden" value="' . $this->img . '" name="deleteimagevalues"></form><form name="resizePhoto" method="post"><input type="submit" value="Resize Photo"><input type="hidden" value="' . $this->img . '" name="resize"></form>';
+			$this->instruction = 'Click Resize';
+			$this->warning = null;
+
+		}
 	}
+		
 	public function updateCoordinates(){
 		
 		//checking if value being submitted is correct type
@@ -197,33 +232,6 @@ class imageLoader {
 	public function displayPupilInformation(){
 		return '<div class="pupilInfo"><p><strong>Left:</strong> ' . $this->lx . ' <strong>X</strong> ' . $this->ly . '</p><p><strong>Right:</strong> ' . $this->rx . ' <strong>X</strong> ' . $this->ry . '</p></div>' . $this->button;
 	}
-
-	public function pupilSelect(){
-		    
-		if($this->lx == 0 || $this->ly == 0) {
-			$this->pupil = 'L';
-			$this->pupilFriendly = 'Left';
-			$this->button = null;
-			$this->instruction = 'Click on Left-Most Pupil';
-			$this->warning = null;
-
-		} elseif($this->rx == 0 || $this->ry == 0) {
-			$this->pupil = 'R';
-			$this->pupilFriendly = 'Right';
-			$this->button = '<form name="deleteCoordinates" method="post"><input type="submit" value="Delete Value(s)"><input type="hidden" value="' . $this->img . '" name="deleteimagevalues"></form>';
-			$this->instruction = 'Click on Right-Most Pupil';
-			$this->warning = null;
-
-		} else {
-			$this->pupil = 'C';
-			$this->pupilFriendly = 'COMPLETE';
-			$this->button = '<form name="deleteCoordinates" method="post"><input type="submit" value="Delete Value(s)"><input type="hidden" value="' . $this->img . '" name="deleteimagevalues"></form><form name="resizePhoto" method="post"><input type="submit" value="Resize Photo"><input type="hidden" value="' . $this->img . '" name="resize"></form>';
-			$this->instruction = 'Click Resize';
-			$this->warning = null;
-
-		}
-	}
-
 	public function resizePhoto(){
 		//initializing new image set
 		$imgBase = PHPImageWorkshop\ImageWorkshop::initFromPath('images/'.$this->img);
@@ -278,81 +286,13 @@ class imageLoader {
 		//removing stored cookie values
 		$this->deleteCoordinates();
 	}
-
 	public function displayImage(){
 		echo '<br><h1>Resized Image</h1><img class="resizedImage" src="images/resized/' . $this->newImage . '" alt="Image Name">';
 	}
 }
 
-?>
-<html>
-<head>
-<script language="JavaScript">
-function point_it(event){
-    pos_x = event.offsetX?(event.offsetX):event.pageX-document.getElementById("pointer_div").offsetLeft;
-    pos_y = event.offsetY?(event.offsetY):event.pageY-document.getElementById("pointer_div").offsetTop;
-    document.getElementById("pupil").style.left = (pos_x-10) ;
-    document.getElementById("pupil").style.top = (pos_y-9) ;
-    document.getElementById("pupil").style.visibility = "visible" ;
-    document.pointform.form_x.value = pos_x;
-    document.pointform.form_y.value = pos_y;
-    document.pointform.submit();
-}
-</script>
 
-</head>
-<style>
-html,body {
-	margin-bottom: 50px;
-	padding-bottom: 50px;
-}
-.imageContainer {
-	width: 510px;
-	padding: 5px 0 0 5px;
-	border: 1px solid red;
-	margin: 0 auto;
-}
-#pointer_div {
-	width: 510px;
-	min-height: 700px;
-}
-.eyeLine {
-	width: 300px;
-	height: 2px;
-	display: block;
-	position: absolute;
-	top: 140px;
-	background: blue;
-}
-.leftEye, .rightEye {
-	width: 18px;
-	height: 18px;
-	position: relative;
-	top: 116px;
-	display: block;
-	float: left;
-	font-size: 10px;
-	text-align: center;
-	color: white;
-	background: url('assets/crosshair.png');
-	display: none;
-}
-
-.leftEye {left: <?php echo $_COOKIE['leftX']; ?>px; top: <?php echo $_COOKIE['leftY']; ?>px; }
-.rightEye {left: <?php echo $_COOKIE['rightX']; ?>px; top: <?php echo $_COOKIE['rightY']; ?>px;}
-
-.resizedImage {
-	border: 1px solid #000;
-}
-</style>
-<body>
-<?php
-require_once("src/PHPImageWorkshop/ImageWorkshop.php");
-
-
-echo '<a href="index.php" title="back to image selection">Return to Image List</a>';
 $image = new imageLoader();
-
 
 ?>
 
