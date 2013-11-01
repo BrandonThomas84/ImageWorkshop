@@ -19,9 +19,16 @@ html,body {
 	margin-bottom: 50px;
 	padding-bottom: 50px;
 }
+#left {
+	float: left;
+	width: 45%;
+}
+#right {
+	float: right;
+	width: 54%;
+}
 .imageContainer {
 	width: 510px;
-	padding: 5px 0 0 5px;
 	border: 1px solid red;
 	margin: 0 auto;
 }
@@ -56,6 +63,25 @@ html,body {
 
 .resizedImage {
 	border: 1px solid #000;
+}
+
+.pupilInfo input {
+	color: #fff;
+	font-weight: bold;
+	width: 200px;
+	text-shadow: 2px 2px 5px #000;
+}
+.pupilInfo .deleteL input {
+	background-color: yellow;
+}
+.pupilInfo .deleteR input {
+	background-color: red;
+}
+.pupilInfo .deleteA input {
+	background-color: blue;
+}
+.pupilInfo .resize input {
+	background-color: green;
 }
 </style>
 <body>

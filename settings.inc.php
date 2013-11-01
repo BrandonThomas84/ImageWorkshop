@@ -1,3 +1,4 @@
+<?php /* FILEVERSION: v1.0.1b */ ?>
 <?php
 //database definitions
 
