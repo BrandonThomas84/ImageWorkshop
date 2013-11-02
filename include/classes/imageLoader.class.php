@@ -31,50 +31,70 @@ class imageLoader {
 	
 	
 	public function imageLoader(){
-
+		//database connection
+		$this->mysqli = new mysqli(_DB_SERVER_,_DB_USER_,_DB_PASSWD_,_DB_NAME_);
+		if (!$this->mysqli){die("Could not connect to MySQLi: " . mysql_error());}
+		
+		//including the image workshop files
 		require_once("src/PHPImageWorkshop/ImageWorkshop.php");
 
 		//instantiating new page class (loads header and footer information)
 		$this->page = new page;
 
-		if(!isset($_GET['img'])){
+		//check if a prepared image has been selected
+		if(isset($_GET['fc'])){
+			
+			//set the face variable
+			$face = new frameSelector($_GET['fc']);
 
-			//include the head information
-			require_once('include/head.php');
-
-			//if there is no get and no image return the image sselection list
-			echo $this->selectImage();
 		} else {
 
-			/*
-			//database connection
-			$this->mysqli = new mysqli(_DB_SERVER_,_DB_USER_,_DB_PASSWD_,_DB_NAME_);
-			if (!$this->mysqli){die("Could not connect to MySQLi: " . mysql_error());}
-			*/
+			//run image preparation script
+			if(!isset($_GET['img'])){
+
+				//check if an update has been submitted 
+				$this->submissionCheck();
+
+				//if there is no get and no image return the image sselection list
+				echo $this->selectImage();
+
+			} else {
+
+				/*
+				//database connection
+				$this->mysqli = new mysqli(_DB_SERVER_,_DB_USER_,_DB_PASSWD_,_DB_NAME_);
+				if (!$this->mysqli){die("Could not connect to MySQLi: " . mysql_error());}
+				*/
 
 
-			//setting coordinate properties
-			$this->setCoordinateProperties();
+				//setting coordinate properties
+				$this->setCoordinateProperties();
 
-			//check if an update has been submitted 
-			$this->submissionCheck();
-			
-			//checking if image has been created
-			$this->checkForExistingImage();
+				//check if an update has been submitted 
+				$this->submissionCheck();
+				
+				//checking if image has been created
+				$this->checkForExistingImage();
 
-			echo '<a href="index.php" title="back to image selection">Return to Image List</a>';
+				echo '<a href="index.php" title="back to image selection">Return to Image List</a>';
+
+			}
 
 		}
 	}
 	public function submissionCheck(){
+		//checking for submission of uploaded image
+		if(isset($_FILES["imgUpload"])){
+			$this->imageUpload($_FILES['imgUpload']);
+		}
 
-		//checking for submission of left eye coordinates
+		//checking for submission of pupil coordinates
 		if(isset($_POST["form_x"])){
 			$this->updateCoordinates($_POST['pupil']);
 			header ('Location: index.php?img=' . $this->img);
 		}
 
-		//checking for delete 
+		//checking for delete pupil coordinates command
 		foreach(array('L','R','A') AS $value){
 			if(isset($_POST['deleteimagevalues' . $value])){
 				$this->deleteCoordinates($value);
@@ -82,15 +102,10 @@ class imageLoader {
 			}
 		}
 
-		//checking for crop 
-		if(isset($_POST['crop'])){
-			$this->cropPhoto();
-			header ('Location: index.php?img=' . $this->img);
-		}
-
-		//checking for resize 
+		//checking for resize command
 		if(isset($_POST['resize'])){
 			$this->resizePhoto();
+			header ('Location: index.php?img=' . $this->img);
 		}
 	}
 	public function selectImage(){
@@ -103,20 +118,82 @@ class imageLoader {
 		//files to ignor
 		$noShow = array(".","..",'resized');
 
-		array_push($a,'<p>Please select an image</p><ul>');
+		array_push($a,'
+			<h2>Image Preparation</h2>
+			<p>Please select an image to prepare for the frame selection process.</p>
+			<form name="imagePrepSelection" method="get">
+				<select name="img">');
 
 		//for each image display a link with their name
 		foreach($dirs AS $file){
 			if(!is_dir($file) && (!in_array($file,$noShow))){
-				array_push($a,"<li><a href=\"index.php?img=" . $file . "\">" . strtoupper($file) . "</a></li>");
+				array_push($a,'<option value="' . $file . '">' . strtoupper($file) . '</option>');
 			}
 		}
 
-		//closing unordered list
-		array_push($a,'</ul>');
+		//closing image selector option box and adding upload option form
+		//resized image directory
+		$prepped = scandir('images/face/resized');
 
-		//returning values
-		return implode('',$a);
+		$v = '
+				<input type="submit" value="Select Image">
+			</form>
+			<br>
+			<p>You can also upload an image to be processed</p>
+			<form name="uploadImage" action="' . $_SERVER['PHP_SELF'] . '" method="post" enctype="multipart/form-data">
+				<label for="file">Select Image:</label>
+    			<input type="hidden" name="MAX_FILE_SIZE" value="5242880" />
+				<input type="file" name="imgUpload" id="file">
+				<input type="submit" name="submit" value="Upload">
+			</form>
+			<hr>
+			<h2>Frame Selection</h2>
+			<p>Select from a prepared image below</p>
+			<form name="frameSelectorImage" method="get">
+				<select name="fc">';
+
+		//adding html to array
+		array_push($a,$v);
+
+		//for each image display a link with their name
+		foreach($prepped AS $file){
+			if(!is_dir($file) && (!in_array($file,$noShow))){
+				array_push($a,'<option value="' . $file . '">' . strtoupper($file) . '</option>');
+			}
+		}
+
+		//closing image selector option box and adding upload option form
+		$v = '
+				<input type="submit" value="Select Image">
+			</form>';
+
+		//adding html to array
+		array_push($a,$v);
+
+		//returning page with values
+		return $this->page->buildPage(implode('',$a));
+	}
+	public function imageUpload(){
+		//setting file variables
+		$imgFile = $_FILES['imgUpload']['tmp_name'];
+		$imgType = $_FILES['imgUpload']['type'];
+		$imgName = $_FILES['imgUpload']['name'];
+		$acceptedTypes = array('image/bmp','image/gif','image/jpeg','image/png','image/tiff');
+		$uploadDir = 'images' . DIRECTORY_SEPARATOR . 'face/' . $imgName;
+
+
+		if (in_array($imgType,$acceptedTypes)) {
+			if(move_uploaded_file($imgFile,$uploadDir)){
+				echo '<p style="font-size:24px;width:100%;text-align:center;color:green;">Image has been uploaded and is now available for selection below.</p>';	
+			} else {
+				var_dump($imgFile);
+			}
+			
+		} else {
+			echo '<p style="font-size:24px;width:100%;text-align:center;color:red;">File must be a valid image file to upload. ---- ' . $imgType . '</p>';
+		}
+
+		
 	}
 	public function checkForExistingImage(){
 		//setting filename
@@ -142,7 +219,7 @@ class imageLoader {
 		//set the image property
 		$this->img = $_GET['img'];
 
-		//removing file extention
+		//removing file extention for name property
 		$v = array('.jpg','.jpeg','.png','.gif');
 
 		//setting name property
@@ -329,18 +406,18 @@ class imageLoader {
 		$centerLength = (($this->rx / $scale) - ($this->lx / $scale));
 
 		//distance between pupil and side of image
-		$offset = ($centerLength/1.2);
+		$offset = ($centerLength);
 
 		//crop starting position
-		$positionX = ($this->lx / $scale) - $offset;
-		$positionY = ($this->ly / $scale) - (100 / $scale);
+		$positionX = ($this->lx / $scale) - ($offset);
+		$positionY = ($this->ly / $scale) - (110 / $scale);
 		$position = "LT";
 		
 		//setting the crop area to be equal to the center area plus 2 offsets
 		$cropSize = (($centerLength)+($offset * 2)); 
 
-		//rotating image so eyes are aligned
-		$imgBase->rotate($this->degrees);
+		//rotating image so eyes are aligned and dividing by another integer (2) to reduce how dramatic the rotation is
+		$imgBase->rotate($this->degrees/2);
 		
 		//cropping image
 		$imgBase->cropInPixel($cropSize, $cropSize, $positionX, $positionY, $position);
@@ -355,7 +432,7 @@ class imageLoader {
 		$image = $imgBase->getResult($backgroundColor);
 
 		//save settings
-		$dirPath = __DIR__ . '/images/face/resized';
+		$dirPath = 'images/face/resized';
 		$filename = $this->name . '_resized.png';
 		$createFolders = true;
 		$imageQuality = 75; // useless for GIF, usefull for PNG and JPEG (0 to 100%)

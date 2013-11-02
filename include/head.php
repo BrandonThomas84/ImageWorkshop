@@ -16,8 +16,12 @@ function point_it(event){
 </head>
 <style>
 html,body {
-	margin-bottom: 50px;
-	padding-bottom: 50px;
+	width: 99%;
+}
+body {
+	width: 99%;
+	padding-bottom: 150px;
+	margin: 0 auto;
 }
 #left {
 	float: left;
@@ -28,12 +32,10 @@ html,body {
 	width: 54%;
 }
 .imageContainer {
-	width: 510px;
-	border: 1px solid red;
 	margin: 0 auto;
 }
 #pointer_div {
-	width: 510px;
+	width: 500px;
 	min-height: 700px;
 }
 .eyeLine {
@@ -82,6 +84,39 @@ html,body {
 }
 .pupilInfo .resize input {
 	background-color: green;
+}
+.frame-container {
+	float: left;
+	width: 500px;
+	border: 1px solid #000;
+	height: 500px;
+	overflow-y: scroll;
+	overflow-x: hidden;
+}
+.frame-selector {
+	width: 100px;
+	float: left;
+	text-align: center;
+	border: 1px solid #000;
+	margin: 5px;
+	background: #efefef;
+	font-size: 10px;
+	padding: 0px 0px 5px 0px;
+}
+.frame-selector img {
+	width: 75px;
+}
+.face-with-frames {
+	float: left;
+	width: 500px;
+}
+.footer {
+	margin: 10px;
+	width: 95%;
+	height: 100px;
+	color: #000;
+	position: absolute;
+	bottom: 0px;
 }
 </style>
 <body>
